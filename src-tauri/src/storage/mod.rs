@@ -107,6 +107,12 @@ impl Store {
         snapshot["settings"] = settings;
         snapshot["widgets"] = Value::Array(widgets);
         snapshot["content"] = Value::Object(content);
+        if let Some(value) = self.query_one("SELECT value_json FROM settings WHERE key = 'active_layout_key'")? {
+            snapshot["activeLayoutKey"] = serde_json::from_str(&value).map_err(|e| format!("stored active layout key is invalid: {e}"))?;
+        }
+        if let Some(value) = self.query_one("SELECT value_json FROM settings WHERE key = 'layout_profiles'")? {
+            snapshot["layoutProfiles"] = serde_json::from_str(&value).map_err(|e| format!("stored layout profiles are invalid: {e}"))?;
+        }
         serde_json::from_value(snapshot).map(Some).map_err(|e| format!("stored snapshot is invalid: {e}"))
     }
 
@@ -122,6 +128,10 @@ impl Store {
             self.insert_text("INSERT INTO settings(key, value_json) VALUES (?, ?)", &["revision", &revision.to_string()])?;
             let settings_json = serde_json::to_string(&settings).map_err(|e| format!("settings serialization failed: {e}"))?;
             self.insert_text("INSERT INTO settings(key, value_json) VALUES (?, ?)", &["settings", &settings_json])?;
+            let active_layout_json = serde_json::to_string(&snapshot.active_layout_key).map_err(|e| format!("active layout serialization failed: {e}"))?;
+            self.insert_text("INSERT INTO settings(key, value_json) VALUES (?, ?)", &["active_layout_key", &active_layout_json])?;
+            let layout_profiles_json = serde_json::to_string(&snapshot.layout_profiles).map_err(|e| format!("layout profiles serialization failed: {e}"))?;
+            self.insert_text("INSERT INTO settings(key, value_json) VALUES (?, ?)", &["layout_profiles", &layout_profiles_json])?;
             for widget in widgets {
                 self.insert_widget(widget)?;
             }

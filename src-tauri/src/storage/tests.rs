@@ -55,6 +55,11 @@ fn save_load_round_trip_preserves_unicode_and_omits_provider_data() {
         value["providers"]["codex"]["state"] = json!("ready");
         value["providers"]["codex"]["data"] = json!({"secret": "must not persist"});
     });
+    let mut snapshot = snapshot;
+    crate::display_layout::activate(&mut snapshot, &crate::display_layout::DisplayConfig {
+        key: "test-display".into(),
+        work_area: crate::model::LayoutWorkArea { width: 1920.0, height: 1040.0 },
+    });
     store.save(&snapshot).expect("snapshot saves");
     drop(store);
 
@@ -67,6 +72,9 @@ fn save_load_round_trip_preserves_unicode_and_omits_provider_data() {
     assert_eq!(loaded_value["content"]["todo"]["todos"][0]["text"], json!("待办\0内容"));
     assert_eq!(loaded_value["providers"]["codex"]["state"], json!("idle"));
     assert_eq!(loaded_value["providers"]["codex"]["data"], Value::Null);
+    assert_eq!(loaded_value["activeLayoutKey"], json!("test-display"));
+    let profile_x = loaded_value["layoutProfiles"]["test-display"]["widgets"]["memo"]["x"].as_f64().unwrap();
+    assert!((profile_x - 64.0).abs() < 0.001);
     drop(store);
     remove_database(&path);
 }

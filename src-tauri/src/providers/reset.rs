@@ -106,8 +106,8 @@ fn parse_retry_after_ms(value: &str) -> Option<u64> {
     Some((seconds * 1000.0).round() as u64)
 }
 
-fn exact_keys(value: &Map<String, Value>, keys: &[&str]) -> bool {
-    value.len() == keys.len() && keys.iter().all(|key| value.contains_key(*key))
+fn required_keys(value: &Map<String, Value>, keys: &[&str]) -> bool {
+    keys.iter().all(|key| value.contains_key(*key))
 }
 
 fn nonempty_string(value: Option<&Value>) -> bool { value.and_then(Value::as_str).is_some_and(|s| !s.is_empty()) }
@@ -154,9 +154,9 @@ fn valid_uri(value: Option<&Value>) -> bool {
 fn validate_source(value: Option<&Value>) -> bool {
     let Some(source) = value.and_then(Value::as_object) else { return false };
     match source.get("type").and_then(Value::as_str) {
-        Some("x_post") => exact_keys(source, &["type", "author", "url"])
+        Some("x_post") => required_keys(source, &["type", "author", "url"])
             && source.get("author").and_then(Value::as_str) == Some("thsottiaux") && valid_uri(source.get("url")),
-        Some("observed") => source.keys().all(|key| key == "type" || key == "url")
+        Some("observed") => required_keys(source, &["type"])
             && source.get("url").map_or(true, |url| valid_uri(Some(url))),
         _ => false,
     }
@@ -164,7 +164,7 @@ fn validate_source(value: Option<&Value>) -> bool {
 
 fn validate_reset(value: Option<&Value>) -> bool {
     let Some(reset) = value.and_then(Value::as_object) else { return false };
-    exact_keys(reset, &["id", "reset_type", "announced_at", "text", "source"])
+    required_keys(reset, &["id", "reset_type", "announced_at", "text", "source"])
         && nonempty_string(reset.get("id"))
         && reset.get("reset_type").and_then(Value::as_str).is_some_and(|kind| kind == "regular" || kind == "banked")
         && valid_datetime(reset.get("announced_at"))
@@ -175,7 +175,7 @@ fn validate_reset(value: Option<&Value>) -> bool {
 fn validate_watch(value: Option<&Value>) -> bool {
     let Some(watch) = value.and_then(Value::as_object) else { return false };
     let chance_ok = watch.get("reset_chance_percent").is_some_and(|chance| chance.is_null() || chance.as_i64().is_some_and(|n| (0..=100).contains(&n)));
-    exact_keys(watch, &["level", "reset_chance_percent", "forecast_window", "observed_at", "expires_at", "text", "source"])
+    required_keys(watch, &["level", "reset_chance_percent", "forecast_window", "observed_at", "expires_at", "text", "source"])
         && watch.get("level").and_then(Value::as_str).is_some_and(|level| level == "elevated" || level == "strong")
         && chance_ok && text_string(watch.get("forecast_window"))
         && valid_datetime(watch.get("observed_at")) && valid_datetime(watch.get("expires_at"))
@@ -185,7 +185,7 @@ fn validate_watch(value: Option<&Value>) -> bool {
 fn validate_stats(value: Option<&Value>) -> bool {
     let Some(stats) = value.and_then(Value::as_object) else { return false };
     let number = |key: &str| stats.get(key).is_some_and(|item| item.is_null() || item.as_f64().is_some_and(|n| n.is_finite() && n >= 0.0));
-    exact_keys(stats, &["total", "last_reset_at", "days_since_last", "avg_interval_days"])
+    required_keys(stats, &["total", "last_reset_at", "days_since_last", "avg_interval_days"])
         && stats.get("total").and_then(Value::as_i64).is_some_and(|n| n >= 0)
         && (stats.get("last_reset_at").is_some_and(Value::is_null) || valid_datetime(stats.get("last_reset_at")))
         && number("days_since_last") && number("avg_interval_days")
@@ -193,7 +193,7 @@ fn validate_stats(value: Option<&Value>) -> bool {
 
 fn validate_meta(value: Option<&Value>) -> bool {
     let Some(meta) = value.and_then(Value::as_object) else { return false };
-    exact_keys(meta, &["api_version", "generated_at"])
+    required_keys(meta, &["api_version", "generated_at"])
         && meta.get("api_version").and_then(Value::as_str) == Some("v1")
         && valid_datetime(meta.get("generated_at"))
 }
@@ -201,7 +201,7 @@ fn validate_meta(value: Option<&Value>) -> bool {
 pub fn validate_status(value: &Value) -> Result<(), ResetError> {
     let Some(root) = value.as_object() else { return Err(ResetError::InvalidResponse) };
     let Some(data) = root.get("data").and_then(Value::as_object) else { return Err(ResetError::InvalidResponse) };
-    if !exact_keys(root, &["data", "meta"]) || !exact_keys(data, &["latest_reset", "active_watch", "stats"])
+    if !required_keys(root, &["data", "meta"]) || !required_keys(data, &["latest_reset", "active_watch", "stats"])
         || (!data.get("latest_reset").is_some_and(Value::is_null) && !validate_reset(data.get("latest_reset")))
         || (!data.get("active_watch").is_some_and(Value::is_null) && !validate_watch(data.get("active_watch")))
         || !validate_stats(data.get("stats")) || !validate_meta(root.get("meta")) {
@@ -331,5 +331,27 @@ mod tests {
         value["data"]["latest_reset"] = Value::Null;
         assert!(validate_status(&value).is_ok());
         assert_eq!(sanitize_status(&value), json!({"latestReset":null,"activeWatch":null}));
+    }
+
+    #[test]
+    fn accepts_additive_api_fields_without_exposing_them() {
+        let mut value = fixture();
+        value["data"]["scheduled_reset"] = Value::Null;
+        value["meta"]["new_optional_field"] = json!({"future": true});
+        value["data"]["latest_reset"]["source"]["new_optional_field"] = json!(true);
+        assert!(validate_status(&value).is_ok());
+        let sanitized = sanitize_status(&value);
+        assert_eq!(sanitized, json!({"latestReset":{"id":"1","announcedAt":"2026-09-03T10:00:00+02:00","resetType":"regular","sourceType":"observed"},"activeWatch":null}));
+        assert!(!sanitized.to_string().contains("scheduled_reset"));
+        assert!(!sanitized.to_string().contains("new_optional_field"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "contacts the public codex-resets.com endpoint"]
+    fn live_status_uses_the_same_winhttp_and_parser_as_the_application() {
+        let value = ResetClient::new().fetch_status().expect("live reset status is readable");
+        assert!(value.get("data").is_some());
+        assert!(sanitize_status(&value).get("latestReset").is_some());
     }
 }

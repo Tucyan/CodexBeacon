@@ -2,6 +2,37 @@ use crate::{AppState,model::Action};
 use std::{sync::{atomic::Ordering,Arc},time::{Duration,Instant}};
 use tauri::{Manager,Emitter};
 
+fn reconcile_display(app:&tauri::AppHandle)->Result<(),String>{
+    let state=app.state::<AppState>();
+    let config=crate::display_layout::current_config(app)?;
+    let decision=state.display.lock().map_err(|_|"display_lock")?.observe(config,std::time::Instant::now());
+    match decision {
+        crate::display_layout::DisplayDecision::Stable=>state.display_transition.store(false,Ordering::SeqCst),
+        crate::display_layout::DisplayDecision::Wait=>state.display_transition.store(true,Ordering::SeqCst),
+        crate::display_layout::DisplayDecision::Switch(config)=>{
+            state.display_transition.store(true,Ordering::SeqCst);
+            let updated={
+                let mut snapshot=state.snapshot.lock().map_err(|_|"state_lock")?;
+                let before=snapshot.clone();let mut updated=before.clone();
+                if !crate::display_layout::activate(&mut updated,&config){return Ok(());}
+                updated.revision=updated.revision.checked_add(1).ok_or("revision_overflow")?;
+                crate::model::validate_snapshot(&updated)?;
+                crate::window::sync_windows(app,Some(&before),&updated)?;
+                *snapshot=updated.clone();updated
+            };
+            state.display.lock().map_err(|_|"display_lock")?.commit(config,std::time::Instant::now());
+            crate::mark_dirty(&state);crate::broadcast(app,&updated);
+            crate::record("display_layout_switched");
+        }
+    }
+    Ok(())
+}
+
+fn display_matches_active(app:&tauri::AppHandle,state:&AppState)->bool{
+    let Ok(config)=crate::display_layout::current_config(app) else{return false};
+    state.display.lock().ok().is_some_and(|tracker|tracker.is_active(&config))
+}
+
 pub async fn flush_views(app:&tauri::AppHandle,target:Option<&str>)->Result<(),String>{
     let state=app.state::<AppState>();
     let labels=app.webview_windows().into_keys().filter(|label|label.starts_with("widget-")&&target.is_none_or(|t|t==label.as_str())).collect::<std::collections::HashSet<_>>();
@@ -62,6 +93,7 @@ pub fn start_workers(app:&tauri::AppHandle){
                 }
             }
             if !queued.swap(true,Ordering::SeqCst){let app=handle.clone();let flag=queued.clone();let _=handle.run_on_main_thread(move||{
+                if reconcile_display(&app).is_err(){app.state::<AppState>().display_transition.store(true,Ordering::SeqCst);crate::record("display_layout_query_failed");}
                 if let Ok(snapshot)=crate::snapshot(&app){if let Ok(mut runtime)=app.state::<AppState>().runtime.lock(){runtime.tick(&app,&snapshot);}}
                 flag.store(false,Ordering::SeqCst);
             });}
@@ -109,10 +141,14 @@ pub fn window_event(window:&tauri::Window,event:&tauri::WindowEvent){
         });}
         return;
     }
+    if matches!(event,tauri::WindowEvent::ScaleFactorChanged{..}) {
+        app.state::<AppState>().display_transition.store(true,Ordering::SeqCst);return;
+    }
     if !matches!(event,tauri::WindowEvent::Moved(_)|tauri::WindowEvent::Resized(_)){return;}
     let Some(id)=label.strip_prefix("widget-") else{return;};
     let state=app.state::<AppState>();
     if state.applying_geometry.load(Ordering::SeqCst){return;}
+    if state.display_transition.load(Ordering::SeqCst)||!display_matches_active(&app,&state){state.display_transition.store(true,Ordering::SeqCst);return;}
     let Ok(mut value)=state.snapshot.lock() else{return;};
     if state.writes_frozen.load(Ordering::SeqCst){return;}
     if value.settings.layout_locked {return;}
@@ -128,5 +164,6 @@ pub fn window_event(window:&tauri::Window,event:&tauri::WindowEvent){
     let next=((x-left) as f64/dpi,(y-top) as f64/dpi,width as f64/dpi/scale,height as f64/dpi/scale);
     if (widget.x-next.0).abs()<0.5&&(widget.y-next.1).abs()<0.5&&(widget.width-next.2).abs()<0.5&&(widget.height-next.3).abs()<0.5{return;}
     widget.x=next.0;widget.y=next.1;widget.width=next.2.max(120.0);widget.height=next.3.max(100.0);
+    crate::display_layout::capture_active(&mut value);
     value.revision+=1;let snapshot=value.clone();drop(value);crate::mark_dirty(&state);crate::broadcast(&app,&snapshot);
 }

@@ -1,9 +1,9 @@
-use crate::model::{AppSettings, Snapshot, WidgetContent, WidgetInstance};
+use crate::model::{AppSettings, LayoutProfile, Snapshot, WidgetContent, WidgetInstance};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, io::Write, path::{Path, PathBuf}, time::{Duration, SystemTime, UNIX_EPOCH}};
 
 pub const BACKUP_FORMAT: &str = "desktop-dashboard-backup";
-const BACKUP_VERSION: u32 = 1;
+const BACKUP_VERSION: u32 = 2;
 const MAX_BACKUP_BYTES: u64 = 32 * 1024 * 1024;
 const RETAINED_STANDARD_BACKUPS: usize = 10;
 
@@ -13,6 +13,8 @@ pub struct BackupData {
     pub settings: AppSettings,
     pub widgets: Vec<WidgetInstance>,
     pub content: BTreeMap<String, WidgetContent>,
+    #[serde(default)] pub active_layout_key: Option<String>,
+    #[serde(default)] pub layout_profiles: BTreeMap<String, LayoutProfile>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -30,7 +32,8 @@ impl BackupDocument {
         Self {
             format: BACKUP_FORMAT.into(), version: BACKUP_VERSION, created_at,
             app_version: env!("CARGO_PKG_VERSION").into(),
-            data: BackupData { settings: snapshot.settings.clone(), widgets: snapshot.widgets.clone(), content: snapshot.content.clone() },
+            data: BackupData { settings: snapshot.settings.clone(), widgets: snapshot.widgets.clone(), content: snapshot.content.clone(),
+                active_layout_key: snapshot.active_layout_key.clone(), layout_profiles: snapshot.layout_profiles.clone() },
         }
     }
 }
@@ -49,7 +52,7 @@ fn backup_directory(data_dir: &Path) -> PathBuf { data_dir.join("backups") }
 pub fn parse_document_bytes(bytes: &[u8]) -> Result<BackupDocument, String> {
     if bytes.len() as u64 > MAX_BACKUP_BYTES { return Err("backup_too_large".into()); }
     let document: BackupDocument = serde_json::from_slice(bytes).map_err(|_| "backup_invalid".to_string())?;
-    if document.format != BACKUP_FORMAT || document.version != BACKUP_VERSION { return Err("backup_invalid".into()); }
+    if document.format != BACKUP_FORMAT || !(1..=BACKUP_VERSION).contains(&document.version) { return Err("backup_invalid".into()); }
     Ok(document)
 }
 
@@ -58,6 +61,7 @@ pub fn snapshot_from_document(document: BackupDocument, current: &Snapshot) -> R
         revision: current.revision.checked_add(1).ok_or_else(|| "backup_invalid".to_string())?,
         settings: document.data.settings, widgets: document.data.widgets, content: document.data.content,
         providers: current.providers.clone(),
+        active_layout_key: document.data.active_layout_key, layout_profiles: document.data.layout_profiles,
     };
     crate::model::normalize_snapshot(&mut candidate).map_err(|_| "backup_invalid".to_string())?;
     Ok(candidate)
@@ -186,13 +190,17 @@ mod tests {
     #[test]
     fn backup_round_trip_omits_revision_and_provider_data() {
         let mut current = Snapshot::default();
+        crate::display_layout::activate(&mut current, &crate::display_layout::DisplayConfig {
+            key: "backup-display".into(),
+            work_area: crate::model::LayoutWorkArea { width: 1920.0, height: 1040.0 },
+        });
         current.revision = 41;
         current.providers.codex.state = "ready".into();
         current.providers.codex.data = Some(json!({"secret":"omit"}));
         let document = BackupDocument::from_snapshot(&current, 123);
         let value = serde_json::to_value(&document).unwrap();
         assert_eq!(value["format"], BACKUP_FORMAT);
-        assert_eq!(value["version"], 1);
+        assert_eq!(value["version"], 2);
         assert_eq!(value["createdAt"], 123);
         assert!(value["data"].get("revision").is_none());
         assert!(value["data"].get("providers").is_none());
@@ -205,14 +213,22 @@ mod tests {
         assert_eq!(imported.settings, current.settings);
         assert_eq!(imported.widgets, current.widgets);
         assert_eq!(imported.content, current.content);
+        assert_eq!(imported.active_layout_key, current.active_layout_key);
+        assert_eq!(imported.layout_profiles, current.layout_profiles);
     }
 
     #[test]
     fn backup_format_rejects_future_unknown_and_malformed_documents() {
         let document = BackupDocument::from_snapshot(&Snapshot::default(), 123);
         let mut future = serde_json::to_value(&document).unwrap();
-        future["version"] = json!(2);
+        future["version"] = json!(3);
         assert_eq!(parse_document_bytes(&serde_json::to_vec(&future).unwrap()), Err("backup_invalid".into()));
+
+        let mut legacy = serde_json::to_value(&document).unwrap();
+        legacy["version"] = json!(1);
+        legacy["data"].as_object_mut().unwrap().remove("activeLayoutKey");
+        legacy["data"].as_object_mut().unwrap().remove("layoutProfiles");
+        assert!(parse_document_bytes(&serde_json::to_vec(&legacy).unwrap()).is_ok());
 
         let mut unknown = serde_json::to_value(&document).unwrap();
         unknown["unexpected"] = json!(true);

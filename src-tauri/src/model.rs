@@ -89,6 +89,18 @@ pub struct WidgetInstance {
     pub scale_mode: String, pub scale: f64,
     pub config: BTreeMap<String, serde_json::Value>,
 }
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WidgetGeometry { pub x: f64, pub y: f64, pub width: f64, pub height: f64 }
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LayoutWorkArea { pub width: f64, pub height: f64 }
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LayoutProfile {
+    pub work_area: LayoutWorkArea,
+    pub widgets: BTreeMap<String, WidgetGeometry>,
+}
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TodoItem { pub id: String, pub text: String, pub completed: bool }
@@ -115,6 +127,8 @@ pub struct Snapshot {
     pub revision: u64, pub settings: AppSettings, pub widgets: Vec<WidgetInstance>,
     pub content: BTreeMap<String, WidgetContent>,
     #[serde(default)] pub providers: Providers,
+    #[serde(default)] pub active_layout_key: Option<String>,
+    #[serde(default)] pub layout_profiles: BTreeMap<String, LayoutProfile>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case", rename_all_fields = "camelCase", deny_unknown_fields)]
@@ -147,7 +161,8 @@ impl Default for Snapshot {
             width: 352.0, height: 256.0, scale_mode: "inherit".into(), scale: 1.0, config: BTreeMap::new(),
         }).collect();
         Self { revision: 0, settings: AppSettings::default(), widgets,
-            content: WIDGET_TYPES.iter().map(|k| ((*k).into(), WidgetContent::default())).collect(), providers: Providers::default() }
+            content: WIDGET_TYPES.iter().map(|k| ((*k).into(), WidgetContent::default())).collect(), providers: Providers::default(),
+            active_layout_key: None, layout_profiles: BTreeMap::new() }
     }
 }
 
@@ -226,6 +241,17 @@ pub fn validate_snapshot(state: &Snapshot) -> Result<(), String> {
             return Err("invalid_provider".into());
         }
     }
+    if state.layout_profiles.len() > 32 || state.active_layout_key.as_ref().is_some_and(|key| key.len() > 4096) { return Err("invalid_layout_profiles".into()); }
+    for (key, profile) in &state.layout_profiles {
+        if key.is_empty() || key.len() > 4096 || !in_range(profile.work_area.width, 1.0, 100_000.0) || !in_range(profile.work_area.height, 1.0, 100_000.0)
+            || profile.widgets.len() != WIDGET_TYPES.len() { return Err("invalid_layout_profiles".into()); }
+        for kind in WIDGET_TYPES {
+            let Some(geometry) = profile.widgets.get(kind) else { return Err("invalid_layout_profiles".into()) };
+            if !in_range(geometry.x,-100_000.0,100_000.0) || !in_range(geometry.y,-100_000.0,100_000.0)
+                || !in_range(geometry.width,120.0,10_000.0) || !in_range(geometry.height,100.0,10_000.0) { return Err("invalid_layout_profiles".into()); }
+        }
+    }
+    if state.active_layout_key.as_ref().is_some_and(|key| !state.layout_profiles.contains_key(key)) { return Err("invalid_layout_profiles".into()); }
     Ok(())
 }
 pub fn render_scale(widget: &WidgetInstance, settings: &AppSettings) -> f64 {
@@ -271,6 +297,7 @@ pub fn apply_action(state: &mut Snapshot, caller: &str, action: Action) -> Resul
         }
     }
     validate_snapshot(&next)?;
+    crate::display_layout::capture_active(&mut next);
     next.revision=next.revision.checked_add(1).ok_or("revision_overflow")?;
     *state=next;
     Ok(())

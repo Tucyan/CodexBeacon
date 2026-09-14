@@ -7,6 +7,7 @@ mod lifecycle;
 mod smoke;
 mod backup;
 mod autostart;
+mod display_layout;
 
 use model::{Snapshot,ProviderSnapshot};
 use std::{collections::{HashMap,HashSet},fs::File,sync::{Mutex,atomic::{AtomicBool,Ordering}},time::Instant};
@@ -17,6 +18,7 @@ pub struct AppState {
     smoke_audit:smoke::AuditState,
     snapshot:Mutex<Snapshot>, store:Mutex<storage::Store>,
     pub runtime:Mutex<window::Runtime>, pub applying_geometry:AtomicBool,
+    display:Mutex<display_layout::DisplayTracker>, display_transition:AtomicBool,
     pub stopping:AtomicBool, pub retry_codex:AtomicBool, pub retry_reset:AtomicBool,
     writes_frozen:AtomicBool,
     dirty:Mutex<Option<Instant>>, flushes:Mutex<HashMap<u64,FlushWaiter>>,
@@ -62,7 +64,12 @@ pub fn run(){
             let store=storage::Store::open(&data.join("dashboard.db"))?;
             let mut initial=store.load()?.unwrap_or_default();
             model::normalize_snapshot(&mut initial)?;
-            app.manage(AppState{smoke_audit:Default::default(),snapshot:Mutex::new(initial.clone()),store:Mutex::new(store),runtime:Mutex::new(window::Runtime::new()),applying_geometry:AtomicBool::new(false),stopping:AtomicBool::new(false),writes_frozen:AtomicBool::new(false),retry_codex:AtomicBool::new(false),retry_reset:AtomicBool::new(false),dirty:Mutex::new(Some(Instant::now())),flushes:Mutex::new(HashMap::new()),flush_token:std::sync::atomic::AtomicU64::new(0),quitting:AtomicBool::new(false),workers:Mutex::new(Vec::new()),_instance_lock:lock,data_dir:data});
+            let display_config=display_layout::current_config(app.handle()).unwrap_or_else(|_|display_layout::fallback_config());
+            display_layout::activate(&mut initial,&display_config);
+            model::normalize_snapshot(&mut initial)?;
+            app.manage(AppState{smoke_audit:Default::default(),snapshot:Mutex::new(initial.clone()),store:Mutex::new(store),runtime:Mutex::new(window::Runtime::new()),applying_geometry:AtomicBool::new(false),
+                display:Mutex::new(display_layout::DisplayTracker::new(display_config)),display_transition:AtomicBool::new(false),
+                stopping:AtomicBool::new(false),writes_frozen:AtomicBool::new(false),retry_codex:AtomicBool::new(false),retry_reset:AtomicBool::new(false),dirty:Mutex::new(Some(Instant::now())),flushes:Mutex::new(HashMap::new()),flush_token:std::sync::atomic::AtomicU64::new(0),quitting:AtomicBool::new(false),workers:Mutex::new(Vec::new()),_instance_lock:lock,data_dir:data});
             lifecycle::tray(app.handle())?;
             window::sync_windows(app.handle(),None,&initial)?;
             lifecycle::start_workers(app.handle());

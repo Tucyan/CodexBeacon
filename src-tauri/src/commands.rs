@@ -47,7 +47,10 @@ pub async fn import_backup(window:tauri::WebviewWindow,app:tauri::AppHandle)->Re
     let state=app.state::<AppState>();if state.stopping.load(Ordering::SeqCst){return Err("application_stopping".into());}
     state.writes_frozen.store(true,Ordering::SeqCst);
     let result:Result<(Snapshot,Snapshot,u64),String>=(||{
-        let before=crate::snapshot(&app)?;let (candidate,created_at)=crate::backup::read_import(&path,&before)?;
+        let before=crate::snapshot(&app)?;let (mut candidate,created_at)=crate::backup::read_import(&path,&before)?;
+        let config=crate::display_layout::current_config(&app).unwrap_or_else(|_|crate::display_layout::fallback_config());
+        crate::display_layout::activate(&mut candidate,&config);
+        crate::model::validate_snapshot(&candidate).map_err(|_|"backup_invalid".to_string())?;
         let mut store=state.store.lock().map_err(|_|"storage_lock")?;
         store.save(&candidate).map_err(|_|"database_save_failed".to_string())?;
         *state.snapshot.lock().map_err(|_|"state_lock")?=candidate.clone();

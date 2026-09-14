@@ -83,13 +83,13 @@ impl Runtime {
 }
 fn eligible(snapshot:&Snapshot,label:&str)->bool { snapshot.widgets.iter().any(|w|label==format!("widget-{}",w.id)&&w.enabled&&w.visible_wanted) }
 pub fn geometry(window:&tauri::WebviewWindow,widget:&WidgetInstance,snapshot:&Snapshot){
-    let dpi=window.scale_factor().unwrap_or(1.0); let scale=render_scale(widget,&snapshot.settings);
+    let dpi=window.primary_monitor().ok().flatten().map(|monitor|monitor.scale_factor()).unwrap_or_else(||window.scale_factor().unwrap_or(1.0)); let scale=render_scale(widget,&snapshot.settings);
     let (left,top,right,bottom)=native::work_area();
     let _=window.set_min_size(Some(tauri::LogicalSize::new(120.0*scale,100.0*scale)));
     let width=(widget.width*scale*dpi).round().max(1.0) as u32;
     let height=(widget.height*scale*dpi).round().max(1.0) as u32;
-    let x=(left as f64+widget.x*dpi).round().clamp(left as f64,(right-48).max(left) as f64) as i32;
-    let y=(top as f64+widget.y*dpi).round().clamp(top as f64,(bottom-48).max(top) as f64) as i32;
+    let x=(left as f64+widget.x*dpi).round().clamp(left as f64,(right-width as i32).max(left) as f64) as i32;
+    let y=(top as f64+widget.y*dpi).round().clamp(top as f64,(bottom-height as i32).max(top) as f64) as i32;
     if window.outer_size().ok()!=Some(tauri::PhysicalSize::new(width,height)){ let _=window.set_size(tauri::PhysicalSize::new(width,height)); }
     if window.outer_position().ok()!=Some(tauri::PhysicalPosition::new(x,y)){let _=window.set_position(tauri::PhysicalPosition::new(x,y));}
     let _=window.set_resizable(!snapshot.settings.layout_locked);
