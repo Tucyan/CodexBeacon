@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop-ui",
+  "description": "Local application views receive state; mutation permissions are checked by Rust commands.",
+  "windows": ["settings", "widget-*"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

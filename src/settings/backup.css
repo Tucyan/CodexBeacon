@@ -1,0 +1,13 @@
+.backup-settings { display: grid; gap: .65rem; }
+.backup-settings h2 { margin-bottom: .1rem; }
+.backup-explanation, .backup-settings > .muted { margin: 0; line-height: 1.45; }
+.backup-interval { display: flex !important; align-items: center; justify-content: space-between; gap: .7rem; }
+.backup-interval input { width: 5rem; }
+.backup-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.backup-actions button:disabled { cursor: wait; opacity: .55; }
+.backup-status { min-height: 1.35rem; color: var(--accent); }
+.backup-meta { display: grid; gap: .35rem; margin: .1rem 0 0; }
+.backup-meta > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: .65rem; }
+.backup-meta dt, .backup-meta dd { margin: 0; }
+.backup-meta dt { opacity: .65; }
+.backup-path { overflow-wrap: anywhere; }

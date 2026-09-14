@@ -1,0 +1,15 @@
+{
+  "name": "desktop-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "build": "npm run typecheck && vite build",
+    "tauri": "tauri"
+  },
+  "dependencies": { "@tauri-apps/api": "2.11.1", "react": "19.2.8", "react-dom": "19.2.8" },
+  "devDependencies": { "@tauri-apps/cli": "2.11.4", "@types/react": "19.2.18", "@types/react-dom": "19.2.7", "@vitejs/plugin-react": "4.7.0", "typescript": "5.9.3", "vite": "6.4.3" }
+}

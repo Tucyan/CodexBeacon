@@ -1,0 +1,23 @@
+[package]
+name = "desktop-dashboard"
+version = "0.1.0"
+description = "Independent Windows desktop widgets"
+edition = "2021"
+
+[lib]
+name = "desktop_dashboard_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "=2.6.3", features = [] }
+
+[dependencies]
+tauri = { version = "=2.11.5", features = ["tray-icon"] }
+tauri-runtime = "=2.11.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "1"
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Controls_Dialogs", "Win32_Graphics_Dwm", "Win32_Networking_WinHttp", "Win32_System_LibraryLoader", "Win32_System_Registry"] }

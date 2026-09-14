@@ -1,0 +1,5 @@
+.reset-details { display: grid; gap: .3rem; line-height: 1.35; }
+.reset-caption, .reset-note, .reset-source { font-size: .76em; }
+.reset-time { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .65rem; font-size: .85em; }
+.reset-forecast { display: grid; gap: .2rem; margin-top: .35rem; padding-top: .4rem; border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent); font-size: .85em; }
+.reset-source { margin-top: .3rem; }

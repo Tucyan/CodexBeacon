@@ -1,0 +1,7 @@
+# Project-local mirror; compatible with the existing verified dependency cache.
+[source.crates-io]
+replace-with = "rsproxy-sparse"
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+[net]
+retry = 0
