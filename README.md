@@ -1,38 +1,92 @@
 # Desktop Dashboard
 
-Windows 11 独立桌面组件。每个启用的 Memo、Todo、Countdown、Codex Usage、Codex Reset 使用自己的窗口；统一托盘、设置、SQLite 和 Provider。正式范围见[最终开发计划](最终开发计划.md)。
+Desktop Dashboard 是面向 Windows 11 的轻量桌面组件程序。Memo、Todo、Countdown、Codex Usage 和 Codex Reset 均以独立窗口存在，可分别移动、缩放、调整大小和启用或关闭，无需依附统一背景板。
 
-## 开发与启动
+## 下载与运行
 
-已配置 Rust MSVC、C++ Build Tools/SDK、Node。依赖使用已缓存版本；Cargo 配置 rsproxy，npm 配置 npmmirror。rustfmt/Clippy 可选，尚未安装。
+当前版本为 **v0.1.0**，支持 Windows 11 x64。
+
+1. 从 [GitHub Releases](https://github.com/Tucyan/DesktopDashboard/releases/latest) 下载 `Desktop-Dashboard-0.1.0-windows-x64-portable.zip`。
+2. 解压到任意可写目录。
+3. 运行 `Desktop Dashboard.exe`。
+4. 程序不会显示任务栏按钮，请通过系统托盘打开设置、显示或隐藏组件、锁定布局和退出程序。
+
+可在 PowerShell 中校验下载文件：
 
 ```powershell
-& .\scripts\Build-DesktopDashboard.ps1
-& .\scripts\Start-DesktopDashboard.ps1
+Get-FileHash .\Desktop-Dashboard-0.1.0-windows-x64-portable.zip -Algorithm SHA256
 ```
 
-构建默认离线；只有缺缓存并需要联网时显式使用 `-Online`。脚本不循环重试。首次 Release 使用 `-Release`，可能需要较长编译时间。开发调试可运行 `npm run tauri -- dev`。
+发行页同时提供对应的 `.sha256` 文件。Windows 需要可用的 Microsoft Edge WebView2 Runtime；Windows 11 通常已预装。
 
-默认只启用 Memo/Todo。通过托盘打开设置，可开启其余组件、锁定布局、调整缩放与主题。关闭组件等同隐藏；隐藏与禁用保留内容。数据库位于应用数据目录 `local.desktopdashboard.widgets/dashboard.db`，不写入 Codex 凭据。
+## 功能
 
-“显示桌面时自动出现”使用已验证的 E 组策略，首次可能短暂消失再出现；可选择“跟随系统”，渐显可独立关闭。此处仍需正式 Tauri 版本的人工集成验收，不能用旧 PoC 通过代替。
+- Memo、Todo、Countdown、Codex Usage、Codex Reset 独立组件窗口
+- 无边框透明窗口，不显示在任务栏，统一由系统托盘管理
+- 组件独立移动、调整大小、缩放、启用和关闭
+- 布局编辑与锁定模式，锁定后仍可编辑备忘录和操作待办
+- 4 个深色主题和 4 个浅色主题，并支持自定义颜色与背景、内容透明度
+- 按显示器拓扑、分辨率、DPI、排列和主屏幕分别保存布局；首次遇到新显示配置时继承当前布局
+- SQLite 状态持久化，以及定时或立即 JSON 备份、导出和导入
+- 可配置“显示桌面时自动出现”和渐进显示
+- 当前 Windows 用户开机自启动选项
+- Codex 额度窗口显示剩余额度、重置时间和 banked reset credits
 
-## 检查
+## 数据与隐私
+
+应用数据默认保存在：
+
+```text
+%APPDATA%\local.desktopdashboard.widgets
+```
+
+Codex Usage 通过本机 Codex app-server 只读获取账户与额度数据。程序不保存 Codex access token，也不会把凭据发送给第三方。
+
+Codex Reset 使用 `codex-resets.com` 的公开非官方数据。该站点汇总社区对可能发生的全局 reset 事件的观察与预测，因此组件只展示来源状态和可确认的时间信息，不将其表述为 OpenAI 官方公告或确定承诺。
+
+## 已知问题与验证边界
+
+- 开机自启动已有异常报告，当前标记为待验证。
+- 显示配置布局已按显示器特征隔离保存，仍需在更多多屏、投屏和远程连接组合中人工验证。
+- UU 远程连接刷新后窗口可能短暂出现在普通窗口上方；该现象暂未稳定复现。
+- Explorer 在系统长时间卡顿后重启时，透明窗口可能短暂出现黑色矩形；重新显示或重启程序可恢复。
+- Codex Reset 依赖非官方网络数据源，站点不可用或响应格式变化时会显示 unavailable/error，不影响其他组件。
+
+问题与建议请提交到 [GitHub Issues](https://github.com/Tucyan/DesktopDashboard/issues)。
+
+## 开发
+
+需要 Node.js、Rust MSVC toolchain、Visual Studio C++ Build Tools 和 Windows SDK。
 
 ```powershell
-npm test
+npm install
 npm run build
-cargo test --offline --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path .\src-tauri\Cargo.toml
 ```
 
-## 便携 ZIP
+启动开发版：
+
+```powershell
+npm run tauri dev
+```
+
+构建正式程序：
+
+```powershell
+npm run tauri build
+```
+
+生成便携 ZIP：
 
 ```powershell
 & .\scripts\New-PortableRelease.ps1
 ```
 
-脚本核对 `package.json`、`tauri.conf.json` 与 `Cargo.toml` 的版本号，执行离线 Release 构建，并在 `release/` 生成 Windows x64 便携 ZIP 及其 SHA-256 文件。若 Release EXE 已由同一源码构建，可用 `-SkipBuild` 只重新归档。
+## 文档
 
-便携包不包含用户数据。程序仍使用 `%APPDATA%\local.desktopdashboard.widgets` 保存数据库和自动备份；跨设备迁移应使用设置中的 JSON 导出/导入。
-
-`docs/development/` 保存实现契约和本轮报告，根目录 `可行性验证.md` 是可行性总表。`experiments/` 保存原有 PoC，不是正式源码；构建暂复用其中的 Cargo target 缓存，不覆盖 PoC 可执行文件。
+- [最终开发计划](./最终开发计划.md)
+- [可行性验证总表](./可行性验证.md)
+- [实现契约](./docs/development/CONTRACT.md)
+- [开发与验证报告](./docs/development/REPORT-2026-09-05.md)
+- [已知问题记录](./docs/development/known-issues-2026-09-14.md)
+- [技术决策](./docs/decisions/)
