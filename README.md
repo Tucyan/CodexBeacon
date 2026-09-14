@@ -1,20 +1,22 @@
-# Desktop Dashboard
+# Codex Beacon
 
-Desktop Dashboard 是面向 Windows 11 的轻量桌面组件程序。Memo、Todo、Countdown、Codex Usage 和 Codex Reset 均以独立窗口存在，可分别移动、缩放、调整大小和启用或关闭，无需依附统一背景板。
+Codex Beacon 是面向 Windows 11 的 Codex 额度与 Reset 桌面看板，方便随时查看 Codex 剩余额度、额度窗口重置时间和社区 Reset 信号。Memo、Todo、Countdown、Codex Usage 和 Codex Reset 均以独立窗口存在，可分别移动、缩放、调整大小和启用或关闭。
+
+这是非官方社区项目，与 OpenAI 没有隶属、合作或背书关系。
 
 ## 下载与运行
 
 当前版本为 **v0.1.0**，支持 Windows 11 x64。
 
-1. 从 [GitHub Releases](https://github.com/Tucyan/DesktopDashboard/releases/latest) 下载 `Desktop-Dashboard-0.1.0-windows-x64-portable.zip`。
+1. 从 [GitHub Releases](https://github.com/Tucyan/CodexBeacon/releases/latest) 下载 `Codex-Beacon-0.1.0-windows-x64-portable.zip`。
 2. 解压到任意可写目录。
-3. 运行 `Desktop Dashboard.exe`。
+3. 运行 `Codex-Beacon.exe`。
 4. 程序不会显示任务栏按钮，请通过系统托盘打开设置、显示或隐藏组件、锁定布局和退出程序。
 
 可在 PowerShell 中校验下载文件：
 
 ```powershell
-Get-FileHash .\Desktop-Dashboard-0.1.0-windows-x64-portable.zip -Algorithm SHA256
+Get-FileHash .\Codex-Beacon-0.1.0-windows-x64-portable.zip -Algorithm SHA256
 ```
 
 发行页同时提供对应的 `.sha256` 文件。Windows 需要可用的 Microsoft Edge WebView2 Runtime；Windows 11 通常已预装。
@@ -52,7 +54,7 @@ Codex Reset 使用 `codex-resets.com` 的公开非官方数据。该站点汇总
 - Explorer 在系统长时间卡顿后重启时，透明窗口可能短暂出现黑色矩形；重新显示或重启程序可恢复。
 - Codex Reset 依赖非官方网络数据源，站点不可用或响应格式变化时会显示 unavailable/error，不影响其他组件。
 
-问题与建议请提交到 [GitHub Issues](https://github.com/Tucyan/DesktopDashboard/issues)。
+问题与建议请提交到 [GitHub Issues](https://github.com/Tucyan/CodexBeacon/issues)。
 
 ## 开发
 

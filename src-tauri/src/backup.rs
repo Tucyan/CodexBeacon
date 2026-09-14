@@ -154,7 +154,7 @@ pub fn choose_json_path(save: bool, owner: isize) -> Result<Option<PathBuf>, Str
         file[..default.len()].copy_from_slice(&default);
     }
     let filter = "JSON 文件 (*.json)\0*.json\0所有文件 (*.*)\0*.*\0\0".encode_utf16().collect::<Vec<_>>();
-    let title = if save { "导出 Desktop Dashboard 备份" } else { "导入 Desktop Dashboard 备份" }.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+    let title = if save { "导出 Codex Beacon 备份" } else { "导入 Codex Beacon 备份" }.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
     let extension = "json\0".encode_utf16().collect::<Vec<_>>();
     let mut dialog = OPENFILENAMEW::default();
     dialog.lStructSize = std::mem::size_of::<OPENFILENAMEW>() as u32;

@@ -47,5 +47,5 @@ function WidgetView({ snapshot, widget }: { snapshot: NonNullable<ReturnType<typ
 
 function Home({ snapshot }: { snapshot: NonNullable<ReturnType<typeof useDashboard>> }) {
   const visible = snapshot.widgets.filter((widget) => widget.enabled && widget.visibleWanted);
-  return <div className="empty-state"><span className="eyebrow">Desktop Dashboard</span><h1>{visible.length ? 'Widgets are ready' : 'No widgets enabled'}</h1><p>Open a widget window or use Settings to configure the dashboard.</p></div>;
+  return <div className="empty-state"><span className="eyebrow">Codex Beacon</span><h1>{visible.length ? 'Widgets are ready' : 'No widgets enabled'}</h1><p>Open a widget window or use Settings to configure the dashboard.</p></div>;
 }

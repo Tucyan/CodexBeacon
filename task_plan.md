@@ -1,4 +1,4 @@
-# Desktop Dashboard 执行计划
+# Codex Beacon 执行计划
 
 ## 当前开发进度（2026-09-05）
 

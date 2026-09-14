@@ -1,4 +1,4 @@
-Desktop Dashboard v0.1.0 是首个公开的 Windows 11 x64 便携版本。
+Codex Beacon v0.1.0 是首个公开的 Windows 11 x64 便携版本，主要用于实时查看 Codex 剩余额度、额度重置时间和社区 Reset 信号。
 
 ## 主要功能
 
@@ -14,12 +14,12 @@ Desktop Dashboard v0.1.0 是首个公开的 Windows 11 x64 便携版本。
 
 ## 安装
 
-下载 `Desktop-Dashboard-0.1.0-windows-x64-portable.zip`，解压后运行 `Desktop Dashboard.exe`。程序不显示任务栏按钮，管理入口位于系统托盘。
+下载 `Codex-Beacon-0.1.0-windows-x64-portable.zip`，解压后运行 `Codex-Beacon.exe`。程序不显示任务栏按钮，管理入口位于系统托盘。
 
 ZIP 的 SHA256：
 
 ```text
-047A1252C6BCE60EE2A5EAA5271BB3445D391AEC20D4CB998C7BEA409AD75A9F
+7091E06910DC0B26766EDA2B1D46471D6521856DF9CA41B23AE602C32E9D9165
 ```
 
 ## 已知问题

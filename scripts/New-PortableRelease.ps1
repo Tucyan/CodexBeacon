@@ -32,7 +32,7 @@ if (-not (Test-Path -LiteralPath $sourceExecutable -PathType Leaf)) {
 }
 
 $releaseRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'release'))
-$folderName = "Desktop-Dashboard-$version-windows-x64-portable"
+$folderName = "Codex-Beacon-$version-windows-x64-portable"
 $stage = [IO.Path]::GetFullPath((Join-Path $releaseRoot $folderName))
 $zipPath = [IO.Path]::GetFullPath((Join-Path $releaseRoot ($folderName + '.zip')))
 $checksumPath = $zipPath + '.sha256'
@@ -45,15 +45,15 @@ if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force 
 if (Test-Path -LiteralPath $checksumPath) { Remove-Item -LiteralPath $checksumPath -Force }
 New-Item -ItemType Directory -Path $stage | Out-Null
 
-$portableExecutable = Join-Path $stage 'Desktop-Dashboard.exe'
+$portableExecutable = Join-Path $stage 'Codex-Beacon.exe'
 Copy-Item -LiteralPath $sourceExecutable -Destination $portableExecutable
 $binaryHash = (Get-FileHash -LiteralPath $portableExecutable -Algorithm SHA256).Hash
 $builtAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 
 @"
-Desktop Dashboard $version Windows x64 便携版
+Codex Beacon $version Windows x64 便携版
 
-运行：双击 Desktop-Dashboard.exe。程序启动后通过系统托盘管理组件和设置。
+运行：双击 Codex-Beacon.exe。程序启动后通过系统托盘管理组件和设置。
 
 开机启动：在“设置 → Behavior”勾选“开机自动运行”。该设置只作用于当前 Windows 用户，不需要管理员权限，也不会写入 JSON 备份。
 
@@ -74,7 +74,7 @@ Desktop Dashboard $version Windows x64 便携版
     version = $version
     target = $target
     builtAtUtc = $builtAt
-    executable = 'Desktop-Dashboard.exe'
+    executable = 'Codex-Beacon.exe'
     executableSha256 = $binaryHash
     appIdentifier = [string]$tauri.identifier
 } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'VERSION.json') -Encoding utf8

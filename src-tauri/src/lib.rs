@@ -85,6 +85,6 @@ pub fn run(){
                 if !handle.state::<AppState>().stopping.load(Ordering::SeqCst){api.prevent_exit();}
             }
         }),
-        Err(_)=>{record("application_start_failed");eprintln!("Desktop Dashboard could not start. Check runtime.log or an existing instance.");}
+        Err(_)=>{record("application_start_failed");eprintln!("Codex Beacon could not start. Check runtime.log or an existing instance.");}
     }
 }

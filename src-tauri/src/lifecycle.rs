@@ -59,7 +59,7 @@ fn alert(app:&tauri::AppHandle){
     let handle=app.clone();let _=app.run_on_main_thread(move||{
         let _=crate::window::settings(&handle);
         let text="保存尚未完成，操作已取消。请检查磁盘空间或重试后再退出。".encode_utf16().chain(Some(0)).collect::<Vec<_>>();
-        let title="Desktop Dashboard".encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+        let title="Codex Beacon".encode_utf16().chain(Some(0)).collect::<Vec<_>>();
         unsafe{windows_sys::Win32::UI::WindowsAndMessaging::MessageBoxW(std::ptr::null_mut(),text.as_ptr(),title.as_ptr(),windows_sys::Win32::UI::WindowsAndMessaging::MB_OK|windows_sys::Win32::UI::WindowsAndMessaging::MB_ICONWARNING);}
     });
 }
@@ -117,7 +117,7 @@ pub fn tray(app:&tauri::AppHandle)->Result<(),String>{
     let menu=Menu::with_items(app,&[&show,&hide,&settings,&lock,&quit_item]).map_err(|_|"tray_menu")?;
     let mut rgba=vec![0u8;32*32*4];
     for y in 4..28 {for x in 4..28 {let i=(y*32+x)*4;rgba[i..i+4].copy_from_slice(if x<14||y<14 {&[130,221,184,255]}else{&[70,120,160,255]});}}
-    TrayIconBuilder::with_id("dashboard-tray").icon(tauri::image::Image::new_owned(rgba,32,32)).tooltip("Desktop Dashboard").menu(&menu).show_menu_on_left_click(true).on_menu_event(|app,event|{
+    TrayIconBuilder::with_id("dashboard-tray").icon(tauri::image::Image::new_owned(rgba,32,32)).tooltip("Codex Beacon").menu(&menu).show_menu_on_left_click(true).on_menu_event(|app,event|{
         let app=app.clone();let id=event.id().as_ref().to_owned();
         if id=="quit" {quit(app);return;}
         if id=="settings" {let _=crate::window::settings(&app);return;}

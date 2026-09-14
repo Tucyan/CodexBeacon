@@ -16,7 +16,7 @@ export function SettingsPage({ snapshot }: { snapshot: Snapshot }) {
   const save = (next: AppSettings) => void dashboardStore.send({ type: 'settings', settings: next });
   const saveTheme = (patch: Partial<ThemeConfig>) => save({ ...settings, theme: { ...settings.theme, ...patch } });
   return <main className="settings-page">
-    <header className="settings-header"><div><span className="eyebrow">Desktop Dashboard</span><h1>Settings</h1></div></header>
+    <header className="settings-header"><div><span className="eyebrow">Codex Beacon</span><h1>Settings</h1></div></header>
     <nav className="settings-tabs" aria-label="Settings sections">{tabs.map(([id, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{label}</button>)}</nav>
     <section className="settings-content">
       {tab === 'appearance' && <Appearance settings={settings} onTheme={saveTheme} />}

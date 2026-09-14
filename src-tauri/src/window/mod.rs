@@ -110,7 +110,7 @@ pub fn sync_windows(app:&tauri::AppHandle,before:Option<&Snapshot>,snapshot:&Sna
             let window=if let Some(window)=existing {window}else{
                 let created=WebviewWindowBuilder::new(app,&label,WebviewUrl::App(format!("index.html?widget={}",widget.id).into()))
                     .initialization_script(if std::env::var_os("DASHBOARD_SMOKE_TEST").is_some(){"window.__DASHBOARD_SMOKE__=true;"}else{""})
-                    .title(format!("Desktop Dashboard · {}",widget.widget_type))
+                    .title(format!("Codex Beacon · {}",widget.widget_type))
                     .inner_size(widget.width,widget.height).min_inner_size(120.0,100.0)
                     .decorations(false).transparent(true).shadow(false).skip_taskbar(true)
                     .minimizable(false).maximizable(false).visible(false).focused(false).build().map_err(|_|"window_create_failed")?;
@@ -141,6 +141,6 @@ pub fn sync_windows(app:&tauri::AppHandle,before:Option<&Snapshot>,snapshot:&Sna
 }
 pub fn settings(app:&tauri::AppHandle)->Result<(),String>{
     if let Some(window)=app.get_webview_window("settings") {let _=window.show();let _=window.set_focus();return Ok(());}
-    WebviewWindowBuilder::new(app,"settings",WebviewUrl::App("index.html?settings=1".into())).title("Desktop Dashboard · 设置").inner_size(760.0,680.0).min_inner_size(580.0,480.0).build().map_err(|_|"settings_create_failed".to_string())?;
+    WebviewWindowBuilder::new(app,"settings",WebviewUrl::App("index.html?settings=1".into())).title("Codex Beacon · 设置").inner_size(760.0,680.0).min_inner_size(580.0,480.0).build().map_err(|_|"settings_create_failed".to_string())?;
     Ok(())
 }

@@ -138,7 +138,7 @@ impl CodexAppServerClient {
         let result = self.request_inner(
             "initialize",
             json!({
-                "clientInfo": {"name": "desktop_dashboard", "title": "Desktop Dashboard", "version": "0.1.0"},
+                "clientInfo": {"name": "desktop_dashboard", "title": "Codex Beacon", "version": "0.1.0"},
                 "capabilities": {"experimentalApi": false}
             }),
             true,

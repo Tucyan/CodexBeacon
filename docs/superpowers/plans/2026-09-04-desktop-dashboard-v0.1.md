@@ -1,4 +1,4 @@
-# Windows Desktop Dashboard v0.1 最终开发计划
+# Codex Beacon v0.1 最终开发计划
 
 > **供执行 agent 使用：** 后续按本计划分阶段执行，使用 `subagent-driven-development` 或 `executing-plans` 技能管理任务。已约定主agent、subagent与用户并行：主agent统筹和集成，subagent承担独立模块，用户确认视觉交互。复选框用于记录正式开发进度。
 

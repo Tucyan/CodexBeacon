@@ -1,6 +1,6 @@
-# Desktop Dashboard 0.1.0 便携 ZIP 发布记录
+# Codex Beacon 0.1.0 便携 ZIP 发布记录
 
-日期：2026-09-05
+日期：2026-09-14
 
 ## 实现方式
 
@@ -12,15 +12,15 @@
 
 ## 产物
 
-- `release/Desktop-Dashboard-0.1.0-windows-x64-portable.zip`
-- `release/Desktop-Dashboard-0.1.0-windows-x64-portable.zip.sha256`
-- ZIP SHA-256：`543FC9F5A37EA0711FBF355540B5A487EAB0B3B1AB3391321C3647A63916B1B7`
-- Release EXE：10,121,216 字节
+- `release/Codex-Beacon-0.1.0-windows-x64-portable.zip`
+- `release/Codex-Beacon-0.1.0-windows-x64-portable.zip.sha256`
+- ZIP SHA-256：`7091E06910DC0B26766EDA2B1D46471D6521856DF9CA41B23AE602C32E9D9165`
+- 包内程序：`Codex-Beacon.exe`，10,287,616 字节
 
 ## 验证结果
 
 - Node 测试：19 项通过，0 项失败。
-- Rust 测试：38 项通过，0 项失败。
+- Rust 测试：43 项通过，0 项失败；1 项真实网络测试默认忽略。
 - TypeScript 检查、Vite 生产构建和 Cargo Release 优化构建通过。
 - Release 原生烟测通过：独立组件渲染身份、事件隔离、移动/调整大小、SQLite 建库和干净退出均满足自动断言。
 - ZIP 可正常读取，共 3 个文件；版本清单中的 EXE 哈希匹配实际文件，ZIP SHA-256 文件匹配实际 ZIP。

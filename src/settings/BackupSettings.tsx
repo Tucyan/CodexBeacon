@@ -8,7 +8,7 @@ type Operation = 'backup' | 'export' | 'import' | null;
 
 function safeErrorMessage(error?: unknown): string {
   const code = String(error ?? '');
-  if (code.includes('backup_invalid')) return '这个文件不是受支持的 Desktop Dashboard 备份。';
+  if (code.includes('backup_invalid')) return '这个文件不是受支持的 Codex Beacon 备份。';
   if (code.includes('backup_too_large')) return '备份文件超过 32 MiB，无法导入。';
   if (code.includes('backup_read_failed')) return '无法读取所选备份文件。';
   if (code.includes('backup_write_failed')) return '无法写入所选位置，请检查路径和磁盘空间。';
